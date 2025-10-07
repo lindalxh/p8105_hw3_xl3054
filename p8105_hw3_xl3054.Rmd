@@ -5,6 +5,57 @@ date: "2025-10-13"
 output: github_document
 ---
 
+# Problem 1
+```{r}
+library(tidyverse)
+library(p8105.datasets)
+data("instacart")
+```
+
+The `instacart` dataset has `r nrow(instacart)` rows and `r ncol(instacart)` columns in total. The columns include variables identifying the order, product, customer, aisle, department, time of order, and indicating whether the product was reordered. Within the `r nrow(instacart)` observations, there are `r length(unique(pull(instacart, user_id)))` unique users.
+
+```{r}
+aisle_uniq = instacart %>% count(aisle, sort = TRUE)
+```
+
+There are `r nrow(aisle_uniq)` aisles. The aisle of fresh vegetables has the most items ordered from.
+
+```{r}
+instacart %>% count(aisle, name = "items_ordered") %>% 
+  filter(items_ordered > 10000) %>% 
+  mutate(aisle = fct_reorder(aisle, items_ordered)) %>% 
+  ggplot(aes(x = aisle, y = items_ordered)) + 
+  geom_col() + 
+  coord_flip() +
+  labs(title = "Number of Items Ordered by Aisle (>10000)",
+       x = "Aisle",
+       y = "Items ordered") +
+  theme_minimal()
+```
+
+```{r}
+instacart %>% filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
+  count(aisle, product_name, sort = TRUE) %>% 
+  group_by(aisle) %>% 
+  slice_max(n, n = 3) %>% 
+  arrange(aisle, desc(n))      
+```
+
+```{r}
+instacart %>% filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
+  group_by(product_name, order_dow) %>% 
+  summarise(mean_hour = mean(order_hour_of_day), .groups = "drop") %>% 
+  mutate(order_dow = recode(order_dow,
+                            `0` = "Sunday",
+                            `1` = "Monday",
+                            `2` = "Tuesday",
+                            `3` = "Wednesday",
+                            `4` = "Thursday",
+                            `5` = "Friday",
+                            `6` = "Saturday")) %>%
+  pivot_wider(names_from = order_dow,
+              values_from = mean_hour)
+```
 
 
 
