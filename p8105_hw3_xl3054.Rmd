@@ -34,7 +34,8 @@ instacart %>% count(aisle, name = "items_ordered") %>%
 ```
 
 ```{r}
-instacart %>% filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
+instacart %>% filter(aisle %in% 
+                       c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
   count(aisle, product_name, sort = TRUE) %>% 
   group_by(aisle) %>% 
   slice_max(n, n = 3) %>% 
@@ -56,6 +57,103 @@ instacart %>% filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")
   pivot_wider(names_from = order_dow,
               values_from = mean_hour)
 ```
+
+
+# Problem 2
+```{r}
+zip_codes = read_csv(file = "./Data/Zip Codes.csv") %>%  ## load data
+  janitor::clean_names() %>%  ## clean data
+  select(zip_code, county, neighborhood, county_fips) %>%  ## select related columns
+  slice(-c(226, 227)) ## remove repeated zipcodes
+
+## zori
+zori = read_csv(file = "./Data/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv") %>%  ## load data
+  janitor::clean_names() %>%  ## clean data
+  pivot_longer(cols = starts_with("x"), 
+    names_to = "date",
+    values_to = "zori") %>%  ## pivot longer by dats
+  mutate(date = str_remove(date, "^x")) %>%  ## clean date format
+  separate(date, into = c("year", "month", "day"), sep = "_") %>%  ## separate into year, month, day
+  mutate(year = as.integer(year), 
+    month = month.name[as.integer(month)]) %>%
+  select(-c(state))  ## make year into integer, month as full name, remove state (repeated)
+
+## merging
+combined = right_join(zip_codes, zori, by = c("zip_code" = "region_name")) %>%
+  select(year, month, ## time
+         zip_code, county_fips, region_id,  ## ids
+         state_name, city, county_name, region_type, neighborhood, metro, size_rank,  ## geographic
+         zori) ## metric
+```
+
+```{r}
+obs_116 = combined %>% filter(!is.na(zori)) %>% 
+  count(zip_code, sort = TRUE) %>% filter(n==116)
+```
+`r nrow(obs_116)` ZIP codes are observed 116 times.
+
+```{r}
+obs_10 = combined %>% filter(!is.na(zori)) %>% 
+  count(zip_code, sort = TRUE) %>% filter(n<10)
+```
+`r nrow(obs_116)` ZIP codes are observed fewer than 10 times. 
+
+################ xxxxxxxxxxWhy are some ZIP codes are observed rarely and others observed in each month?
+
+```{r}
+combined %>%
+  group_by(county_name, year) %>%
+  summarize(mean_zori = mean(zori, na.rm = TRUE), .groups = "drop") %>%
+  arrange(county_name, year) %>% 
+  mutate(mean_zori = round(mean_zori, 2)) %>%
+  pivot_wider(names_from = year, values_from = mean_zori)
+```
+############### Comment on trends in this table.
+
+```{r}
+zori_all = combined %>%
+  filter(!is.na(county_name), !is.na(year), !is.na(zori)) %>%
+  group_by(county_name, year, zip_code) %>%
+  summarize(mean_zori = mean(zori, na.rm = TRUE), .groups = "drop") %>% 
+  ggplot(aes(x = year, y = mean_zori, group = zip_code, color = county_name)) + 
+  geom_line(alpha = 0.5) +
+  theme_minimal() + 
+  scale_x_continuous(breaks = seq(from = min(pull(combined, year), na.rm = TRUE),
+                                  to = max(pull(combined, year), na.rm = TRUE),
+                                  by = 1)) +
+  labs(title = "NYC Rental Prices by ZIP Code and Borough",
+       x = "Year",
+       y = "Average Rental Price (ZORI)",
+       color = "Borough")
+```
+########## xxxxxxxxxxxx comment on any significant elements of this plot.
+
+```{r}
+zori_2023 = combined %>%
+  filter(year == 2023, !is.na(county_name), !is.na(month), !is.na(zori)) %>%
+  group_by(county_name, zip_code, month) %>%
+  summarize(mean_zori = mean(zori, na.rm = TRUE), .groups = "drop") %>% 
+  ggplot(aes(x = county_name, y = mean_zori, fill = county_name)) +
+  geom_violin(trim = TRUE, alpha = 0.6) +
+  geom_boxplot(width = 0.15, outlier.shape = NA, alpha = 0.8, color = "black") +
+  theme_minimal() +
+  labs(title = "Distribution of 2023 ZIP-Level Rental Prices (ZORI) Across NYC Boroughs",
+       x = "Borough",
+       y = "Average Monthly Rental Price (ZORI)",
+       fill = "Borough")
+#  theme(
+#    legend.position = "none",
+#    plot.title = element_text(face = "bold", size = 14),
+#    axis.text.x = element_text(angle = 25, hjust = 1)
+#  )
+```
+################ Comment on this plot
+
+```{r}
+## combine two plots and export
+
+```
+
 
 
 
