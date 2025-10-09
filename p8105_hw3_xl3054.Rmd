@@ -155,7 +155,94 @@ zori_2023 = combined %>%
 ```
 
 
+# Problem 3
+```{r}
+library(httr)
+demographic = read_csv("https://p8105.com/data/nhanes_covar.csv", skip = 4)
+accelerometer = read_csv("https://p8105.com/data/nhanes_accel.csv")
+acc_merged = left_join(demographic, accelerometer, by = "SEQN")
 
+acc_merged = acc_merged %>%
+  janitor::clean_names() %>% 
+  filter(age>=21) %>% 
+  drop_na(sex, age, bmi, education) %>% 
+  mutate(sex = case_when(
+      sex == "1" ~ "Male",
+      sex == "2" ~ "Female"),
+    sex = factor(sex, levels = c("Male", "Female")),
+    education = case_when(
+      education == "1" ~ "Less than high school",
+      education == "2" ~ "High school equivalent", 
+      education == "3" ~ "More than high school"), 
+    education = factor(education, levels = c("Less than high school", 
+                                             "High school equivalent", 
+                                             "More than high school")))
+```
+
+table
+```{r}
+acc_merged  %>% 
+  count(education, sex, name = "n") %>% 
+  pivot_wider(names_from = sex, values_from = n)
+```
+################ xxxxxxcomment
+
+plot
+```{r}
+acc_merged %>% ggplot(aes(x = age, fill = sex)) + 
+  geom_density(alpha = 0.3) + 
+  facet_wrap(~ education, nrow = 1) +
+  theme_minimal() + 
+  labs(
+    title = "Age distributions by sex and education", 
+    x = "Age (years)", 
+    y = "Density", 
+    fill = "Sex"
+  )
+```
+################ xxxxxxcomment
+
+total activity
+```{r}
+acc_merged %>% 
+  pivot_longer(
+    cols = matches("^min", ignore.case = TRUE),
+    names_to = "minute_var",
+    values_to = "mims") %>% 
+  group_by(seqn) %>% 
+  summarise(total_mims = sum(mims),
+            .groups = "drop") %>% 
+  left_join(acc_merged[,1:5], by = "seqn") %>% 
+  ggplot(aes(x = age, y = total_mims, color = sex)) + 
+  geom_point(alpha = 0.5) + 
+  geom_smooth(se = FALSE) + 
+  facet_wrap(~ education) +
+  theme_minimal() +
+  labs(title = "Total daily activity (MIMS) vs Age",
+       x = "Age (years)",
+       y = "Total MIMS (per day)",
+       color = "Sex")
+```
+################ xxxxxxcomment
+
+
+```{r}
+acc_merged %>% 
+  pivot_longer(
+    cols = matches("^min", ignore.case = TRUE),
+    names_to = "minute_var",
+    values_to = "mims") %>% 
+  mutate(minute = as.integer(str_remove(minute_var, "^min")),
+         hour = minute / 60) %>% 
+  ggplot(aes(x = hour, y = mims, color = sex)) +
+  geom_smooth() +
+  facet_wrap(~ education, ncol = 1) + 
+  labs(x = "Hour of Day",
+       y = "Activity (MIMS units)",
+       title = "24-hour Accelerometer Activity by Education Level and Sex",
+       color = "Sex") +
+  theme_minimal()
+```
 
 
 
