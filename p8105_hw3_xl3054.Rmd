@@ -106,7 +106,7 @@ obs_116 = combined %>% filter(!is.na(zori)) %>%
 obs_10 = combined %>% filter(!is.na(zori)) %>% 
   count(zip_code, sort = TRUE) %>% filter(n<10)
 ```
-`r nrow(obs_116)` ZIP codes are observed fewer than 10 times. 
+`r nrow(obs_10)` ZIP codes are observed fewer than 10 times. 
 
 Zillow tends to collect rental price data more frequently in areas with high rental market activity, and less frequently collects data in areas with limited or less visible rental activity. For example, 10044 is Roosevelt Island, which is a small and isolated island that have very limited number of rental listings and most buildings have long-term tenants, so Zillow would not frequently collect data in that area. 11370 is the area near LaGuardia Airport and mix of residential and industrial zoning, where many landlords rent directly, not through online platforms like Zillow. 
 
@@ -137,8 +137,9 @@ zori_all = combined %>%
                                   by = 1)) +  ## fix x-axis year labels
   labs(title = "NYC Rental Prices by ZIP Code and Borough",
        x = "Year",
-       y = "Average Rental Price (ZORI)",
+       y = "Average Rental Price (ZORI, $)",
        color = "Borough")
+zori_all
 ```
 
 This plot shows a clear upward trend in NYC rental prices across all boroughs from 2015 to 2024. There is an obvious drop from 2019 to 2020, followed by a sharp increase from 2021 to 2022, which reflects the rental market during and after the COVID-19 pandemic. Most boroughs of Manhattan have the highest average rental prices and the steepest increase after the pandemic, compared to Bronx boroughs remains to be the areas with lowest rental prices with the most steady increase.
@@ -157,6 +158,7 @@ zori_2023 = combined %>%
        x = "Borough",
        y = "Average Monthly Rental Price (ZORI)",
        fill = "Borough")
+zori_2023
 ```
 
 This plot shows the difference in distribution in 2023 rental prices across NYC boroughs. Manhattan has the highest median and maximum rents with the widest range, indicating both higher rental prices and greater variability and showing Manhattan as the most expansive borough. Kings County has the second high median and max rents with also a relative wide spread. Richmond County has the smallest variation in prices, suggesting a relatively uniform rental market. 
@@ -165,7 +167,7 @@ This plot shows the difference in distribution in 2023 rental prices across NYC 
 ## combine two plots and export
 library(patchwork)
 combined_zori = zori_all/zori_2023
-ggsave("results/Combined ZORI.png", combined_zori, width = 10, height = 8)
+ggsave("results/Combined ZORI.png", combined_zori, width = 10, height = 8, dpi = 200)
 ```
 
 # Problem 3
@@ -200,7 +202,7 @@ acc_merged  %>%
   column_to_rownames("education")
 ```
 
-This table shows the number of males and females by three education levels. Most participants (56 males and 59 females) have more than a high school education. There are much fewer females (23) in high school equivalent level than males (35). Overall, the total number of males and females are similar (110 males and 118 females), indicating there would not be a major gender imbalance, although this sample may not fully represent general population.
+This table shows the number of males and females by three education levels. Most participants (56 males and 59 females) have more than a high school education. There are much fewer females (23) in high school equivalent level than males (35). Overall, the total number of males and females are similar (118 males and 110 females), indicating there would not be a major gender imbalance, although this sample may not fully represent general population.
 
 ```{r}
 ## plot of age distribution
@@ -231,7 +233,7 @@ acc_merged %>%
   left_join(acc_merged[,1:5], by = "seqn") %>%   ## group by participant
   ggplot(aes(x = age, y = total_mims, color = sex)) + 
   geom_point(alpha = 0.5) + 
-  geom_smooth(se = FALSE) +  ## add smooth line
+  geom_smooth(method ="loess", se = FALSE) +  ## add smooth line
   facet_wrap(~ education) +  ## by education level
   theme_minimal() +
   labs(title = "Total daily activity (MIMS) vs Age",
@@ -251,17 +253,20 @@ acc_merged %>%
     values_to = "mims") %>% 
   mutate(minute = as.integer(str_remove(minute_var, "^min")),
          hour = minute / 60) %>%  ## change minutes to hours
-  ggplot(aes(x = hour, y = mims, color = sex)) +
-  geom_smooth() +
+  group_by(education, sex, hour) %>% 
+  summarize(mean_mims = mean(mims, na.rm = TRUE), .groups = "drop") %>% 
+  ggplot(aes(x = hour, y = mean_mims, color = sex)) + 
+  geom_point(size = 0.3, alpha = 0.3)+
+  geom_smooth(method = "loess") +  ## smooth line with loess
   facet_wrap(~ education, ncol = 1) +  ## by education levels
+  scale_x_continuous(limits = c(0, 24), breaks = seq(0, 24, 4)) + 
   labs(x = "Hour of Day",
-       y = "Activity (MIMS units)",
-       title = "24-hour Accelerometer Activity by Education Level and Sex",
+       y = "Average activity (MIMS)",
+       title = "Average 24-hour Activity by Education Level and Sex",
        color = "Sex") +
   theme_minimal()
 ```
 
 This plot shows the 24-hour activity patterns across education levels and sex. In all groups, activity is lowest during the early morning hourse, around 5AM, and rises sharply after that. The peak time for activity is around noon to early afternoon, and activity decreases into the evening. People with less than high school education show a slightly higher activity during the day. In the high school equivalent group, males and females have very similar activity amount, with females have slightly higher activity. In the more than high school group, participants maintain more moderate but consistent activity from morning to early evening. Differences between males and females are very small in all three groups. 
-
 
 
