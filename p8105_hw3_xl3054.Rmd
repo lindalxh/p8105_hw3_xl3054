@@ -267,6 +267,6 @@ acc_merged %>%
   theme_minimal()
 ```
 
-This plot shows the 24-hour activity patterns across education levels and sex. In all groups, activity is lowest during the early morning hourse, around 5AM, and rises sharply after that. The peak time for activity is around noon to early afternoon, and activity decreases into the evening. People with less than high school education show a slightly higher activity during the day. In the high school equivalent group, males and females have very similar activity amount, with females have slightly higher activity. In the more than high school group, participants maintain more moderate but consistent activity from morning to early evening. Differences between males and females are very small in all three groups. 
+This plot shows the 24-hour activity patterns across education levels and sex. In all groups, activity is lowest during the early morning hourse, around 5AM, and rises sharply after that. The peak time for activity is around noon to early afternoon, and activity decreases into the evening. People with less than high school education show a slightly higher activity during the day. In the high school equivalent group, males and females have very similar activity amount, with females have slightly higher activity. In the more than high school group, participants maintain more moderate but consistent activity from morning to early evening. Differences between males and females are very small in all three groups.
 
 
